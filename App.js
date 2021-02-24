@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, Dimensions } from "react-native";
+import { ActivityIndicator, Dimensions, TouchableOpacity } from "react-native";
+import styled from "styled-components/native";
 import { Camera } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
-import styled from "styled-components/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import * as FaceDetector from "expo-face-detector";
 
 const { width, height } = Dimensions.get("window");
 
@@ -18,9 +20,14 @@ const Text = styled.Text`
   font-size: 22px;
 `;
 
+const IconBar = styled.View`
+  margin-top: 40px;
+`;
+
 export default function App() {
   const [hasPermission, setHasPermission] = useState(null);
-  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [cameraType, setcameraType] = useState(Camera.Constants.Type.front);
+  const [smileDetected, setSmileDetected] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -29,9 +36,28 @@ export default function App() {
     })();
   }, []);
 
+  const switchCameraType = () => {
+    setcameraType(
+      cameraType === Camera.Constants.Type.front
+        ? Camera.Constants.Type.back
+        : Camera.Constants.Type.front
+    );
+  };
+
+  const onFacesDetected = ({ faces }) => {
+    const face = faces[0];
+    if (face) {
+      if (face.smilingProbability > 0.7) {
+        setSmileDetected(true);
+        console.log("take photo");
+      }
+    }
+  };
+
   if (hasPermission === true) {
     return (
       <CenterView>
+        <StatusBar />
         <Camera
           style={{
             width: width - 40,
@@ -39,9 +65,26 @@ export default function App() {
             borderRadius: 10,
             overflow: "hidden",
           }}
-          type={Camera.Constants.Type.front}
+          onFacesDetected={smileDetected ? null : onFacesDetected}
+          faceDetectorSettings={{
+            detectLandmarks: FaceDetector.Constants.Landmarks.all,
+            runClassifications: FaceDetector.Constants.Classifications.all,
+          }}
+          type={cameraType}
         />
-        <StatusBar />
+        <IconBar>
+          <TouchableOpacity onPress={switchCameraType}>
+            <MaterialIcons
+              name={
+                cameraType === Camera.Constants.Type.front
+                  ? "camera-rear"
+                  : "camera-front"
+              }
+              size={50}
+              color="white"
+            />
+          </TouchableOpacity>
+        </IconBar>
       </CenterView>
     );
   } else if (hasPermission === false) {
