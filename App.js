@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  ActivityIndicator,
-  Dimensions,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
+import { ActivityIndicator, Dimensions, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { Camera } from "expo-camera";
 import { StatusBar } from "expo-status-bar";
@@ -86,15 +81,16 @@ export default function App() {
     try {
       const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
       if (status === "granted") {
-        // const asset = await MediaLibrary.createAssetAsync(uri);
+        const asset = await MediaLibrary.createAssetAsync(uri);
         let album = await MediaLibrary.getAlbumAsync(ALBUM_NAME);
         if (album === null) {
-          album = await MediaLibrary.createAlbumAsync(
-            ALBUM_NAME,
-            Platform.OS === "android" ? asset : null
-          );
+          album = await MediaLibrary.createAlbumAsync(ALBUM_NAME, asset, false);
         } else {
+          await MediaLibrary.addAssetsToAlbumAsync(asset, album.id, false);
         }
+        setTimeout(() => {
+          setSmileDetected(false);
+        }, 2000);
       } else {
         setHasPermission(false);
       }
@@ -107,6 +103,7 @@ export default function App() {
     return (
       <CenterView>
         <StatusBar />
+        <Text>SMILE TO TAKE PHOTO</Text>
         <Camera
           style={{
             width: width - 40,
